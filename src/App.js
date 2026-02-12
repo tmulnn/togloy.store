@@ -1,13 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import "./App.css";
 
-const MESSAGES = [
-  "Үнэхээр үү? 🥺",
-  "Дахиад бод доо 🙈",
-  "Надад боломж олгооч 😭",
-  "Энэ No чинь буруу юм шиг байна аа 😆",
-  "За за… сүүлчийн боломж! 💘",
-  "Хмм… No-г заслаа 🤭",
+const NO_LINES = [
+  "ҮГҮЙ ЭЭ, БАЯРЛАЛАА",
+  "ЗА БОЛИОЧ 🥺",
+  "ДАХИАД БОД ДОО 🙈",
+  "НАДАД БОЛОМЖ ОЛГООЧ 😭",
+  "ЭНЭ NO ЧИНЬ БУРУУ ЮМ ШИГ БАЙНА 😆",
+  "СҮҮЛЧИЙН БОЛОМЖ ШҮҮ 💘",
 ];
 
 function rand(min, max) {
@@ -15,86 +15,143 @@ function rand(min, max) {
 }
 
 export default function App() {
-  const [yes, setYes] = useState(false);
-  const [noText, setNoText] = useState("No");
-  const [noCount, setNoCount] = useState(0);
-  const [yesScale, setYesScale] = useState(1);
-  const [noPos, setNoPos] = useState({ x: 50, y: 70 }); // percent
+  const [accepted, setAccepted] = useState(false);
 
-  const arenaRef = useRef(null);
+  // ✅ YES grows by X mostly (fills row), Y slightly
+  const [yesSX, setYesSX] = useState(1);
+  const [yesSY, setYesSY] = useState(1);
+  const [yesGlow, setYesGlow] = useState(false);
+
+  const [noCount, setNoCount] = useState(0);
+  const [noText, setNoText] = useState(NO_LINES[0]);
+  const [noPos, setNoPos] = useState({ x: 78, y: 55 });
+
+  const rowRef = useRef(null);
   const yesBtnRef = useRef(null);
 
-  const title = useMemo(() => {
-    if (yes) return "YAYYY!!! 💖💖💖";
-    return "Will you be my Valentine? 💘";
-  }, [yes]);
+  const greeting = "Шайн уу, Хулакаа.";
+  const question = useMemo(() => {
+    if (accepted) return "YAYYYY 💖";
+    return "Чи миний Валентин болох уу?";
+  }, [accepted]);
 
   useEffect(() => {
-    // Initial NO random position
-    setNoPos({ x: rand(15, 85), y: rand(55, 85) });
+    setNoPos({ x: rand(70, 92), y: rand(35, 72) });
   }, []);
 
   function moveNo() {
-    if (yes) return;
+    if (accepted) return;
 
-    // counter + label
     setNoCount((c) => c + 1);
-    setNoText(MESSAGES[(noCount + 1) % MESSAGES.length]);
+    setNoText(NO_LINES[(noCount + 1) % NO_LINES.length]);
 
-    // NO zugtana (arena dotor)
-    const padX = 12;
-    const x = rand(padX, 100 - padX);
-    const y = rand(55, 90);
-    setNoPos({ x, y });
+    // NO runs inside row
+    setNoPos({ x: rand(62, 94), y: rand(28, 78) });
 
-    // YES fullscreen hurtel tomorno (viewport-r max scale tootsono)
-    const yesBtn = yesBtnRef.current;
+    const row = rowRef.current;
+    const btn = yesBtnRef.current;
 
-    setYesScale((s) => {
-      const next = s + 0.45; // өсөх хурд (0.30~0.60 хооронд тааруулж болно)
+    // ✅ Increase scales, but compute max so it can fill row width
+    setYesSX((sx) => {
+      const stepX = 0.22; // өргөнөөр өсөх хурд
+      const nextSX = sx + stepX;
 
-      if (!yesBtn) return +next.toFixed(2);
+      if (!row || !btn) return Math.min(6, +nextSX.toFixed(2));
 
-      const rect = yesBtn.getBoundingClientRect();
+      const r = row.getBoundingClientRect();
+      const b = btn.getBoundingClientRect();
 
-      // base хэмжээ (одоогийн дэлгэцэн дээрх хэмжээг одоогийн scale-ээр хуваана)
-      const baseW = rect.width / s;
-      const baseH = rect.height / s;
+      // base sizes (remove current scales)
+      const baseW = b.width / sx;
+      const baseSY = yesSY; // current Y scale from state (closure ok enough)
+      const baseH = b.height / baseSY;
 
-      // viewport хэмжээ
-      const vw = window.innerWidth;
-      const vh = window.innerHeight;
+      // padding so it doesn't hit border
+      const padX = 26;
+      const padY = 22;
 
-      // дэлгэц "дүүрэх" хязгаар (өргөн 92%, өндөр 78% орчим)
-      const maxScaleX = (vw * 0.92) / baseW;
-      const maxScaleY = (vh * 0.78) / baseH;
-      const maxScale = Math.max(1, Math.min(maxScaleX, maxScaleY));
+      // max X based on row width (THIS is what we want)
+      const maxSX = (r.width - padX * 2) / baseW;
 
-      return Math.min(maxScale, +next.toFixed(2));
+      // keep Y small, just slightly bigger
+      const maxSY = Math.min(1.25, (r.height - padY * 2) / baseH);
+
+      // update Y at the same time (cap)
+      setYesSY((sy) => Math.min(maxSY, +(sy + 0.05).toFixed(2)));
+
+      return Math.min(maxSX, +nextSX.toFixed(2));
     });
+
+    if (noCount >= 1) setYesGlow(true);
   }
 
-  function handleYes() {
-    setYes(true);
+  function onYes() {
+    setAccepted(true);
   }
 
   return (
     <div className="page">
-      <div className="bgHearts" aria-hidden="true" />
+      <div className="heartRain" aria-hidden="true">
+        {Array.from({ length: 12 }).map((_, i) => (
+          <span
+            key={i}
+            className="drop"
+            style={{
+              left: `${Math.random() * 100}%`,
+              animationDelay: `${Math.random() * 2.2}s`,
+              animationDuration: `${3.8 + Math.random() * 2.6}s`,
+            }}
+          >
+            ❤
+          </span>
+        ))}
+      </div>
 
       <div className="card">
-        <div className="badge">shuudtogloy.store</div>
+        <div className="topDecor" aria-hidden="true">
+          <div className="hangingHearts">
+            <span />
+            <span />
+            <span />
+          </div>
 
-        <h1 className="title">{title}</h1>
+          <div className="stickerWrap">
+            <img
+              className="sticker"
+              src="/sticker.png"
+              alt=""
+              onError={(e) => (e.currentTarget.style.display = "none")}
+            />
+            <div className="stickerFallback" aria-hidden="true">
+              🐼💗🐻
+            </div>
+          </div>
+        </div>
 
-        {!yes ? (
+        {!accepted ? (
           <>
-            <p className="subtitle">
-              Нэг л товч дарчих… тэгээд би хамгийн азтай хүн болно 🥰
-            </p>
+            <h1 className="title">
+              <span className="greet">{greeting}</span>
+              <span className="q">{question}</span>
+            </h1>
 
-            {/* NO zugtah talbai */}
-            <div className="arena" ref={arenaRef}>
+            <div className="sub">Чамдаа би зөндөө хайртай шүү 💗</div>
+
+            <div className="buttonRow" ref={rowRef}>
+              <button
+                ref={yesBtnRef}
+                className={`btn yes ${yesGlow ? "glow" : ""} ${
+                  yesSX > 2.2 ? "big" : ""
+                }`}
+                onClick={onYes}
+                style={{
+                  ["--sx"]: yesSX,
+                  ["--sy"]: yesSY,
+                }}
+              >
+                ТИЙМ ЭЭ, МЭДЭЭЖ
+              </button>
+
               <button
                 className="btn no"
                 onClick={moveNo}
@@ -106,26 +163,18 @@ export default function App() {
               >
                 {noText}
               </button>
+
+              <div className="pixelCorner" aria-hidden="true" />
             </div>
 
-            {/* YES дэлгэцийн төвд fixed байрлаад томорно */}
-            <button
-              ref={yesBtnRef}
-              className={`btn yes ${yesScale > 6 ? "big" : ""}`}
-              onClick={handleYes}
-              style={{ ["--yesScale"]: yesScale }}
-            >
-              Yes 💞
-            </button>
-
-            <div className="hint">(No дээр дарахад зугтаана 😆)</div>
+            <div className="hint">(“Үгүй” дээр дарахад зугтана 😆)</div>
           </>
         ) : (
           <Success />
         )}
       </div>
 
-      <footer className="foot">Made with ❤️</footer>
+      <footer className="foot">by tmuln, made with 💗</footer>
     </div>
   );
 }
@@ -134,7 +183,7 @@ function Success() {
   const [burst, setBurst] = useState(0);
 
   useEffect(() => {
-    const t = setInterval(() => setBurst((b) => b + 1), 350);
+    const t = setInterval(() => setBurst((b) => b + 1), 320);
     const stop = setTimeout(() => clearInterval(t), 2200);
     return () => {
       clearInterval(t);
@@ -148,17 +197,10 @@ function Success() {
         💖
       </div>
 
-      <p className="successText">
-        За тэгвэл болзоо товлоё! 🥂
-        <br />
-        <span className="small">(Одоо “Valentine” горим идэвхжлээ 😌)</span>
-      </p>
-
-      <div className="chips">
-        <span className="chip">🍫 шоколад</span>
-        <span className="chip">🌹 сарнай</span>
-        <span className="chip">🎬 кино</span>
-        <span className="chip">🍜 хоол</span>
+      <div className="successTitle">YAY! 🎉</div>
+      <div className="successSub">
+        Одоо болзоо товлоё 🥂<br />
+        <span className="small">Хайртай шүү.</span>
       </div>
 
       <div className="confetti" aria-hidden="true" key={burst}>
