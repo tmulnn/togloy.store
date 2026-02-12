@@ -37,37 +37,37 @@ export default function App() {
   function moveNo() {
     if (yes) return;
 
-    // update counters/text
+    // counter + label
     setNoCount((c) => c + 1);
     setNoText(MESSAGES[(noCount + 1) % MESSAGES.length]);
 
-    // teleport NO inside arena
+    // NO zugtana (arena dotor)
     const padX = 12;
     const x = rand(padX, 100 - padX);
     const y = rand(55, 90);
     setNoPos({ x, y });
 
-    // grow YES but keep it inside arena
-    const arena = arenaRef.current;
+    // YES fullscreen hurtel tomorno (viewport-r max scale tootsono)
     const yesBtn = yesBtnRef.current;
 
     setYesScale((s) => {
-      const next = s + 0.32; // 🔥 өсөх хурд (0.25~0.45 болгож тоглож болно)
+      const next = s + 0.45; // өсөх хурд (0.30~0.60 хооронд тааруулж болно)
 
-      if (!arena || !yesBtn) return Math.min(4, +next.toFixed(2));
+      if (!yesBtn) return +next.toFixed(2);
 
-      const a = arena.getBoundingClientRect();
-      const b = yesBtn.getBoundingClientRect();
+      const rect = yesBtn.getBoundingClientRect();
 
-      // leave padding so it doesn't touch border
-      const pad = 16;
+      // base хэмжээ (одоогийн дэлгэцэн дээрх хэмжээг одоогийн scale-ээр хуваана)
+      const baseW = rect.width / s;
+      const baseH = rect.height / s;
 
-      // current displayed size uses current scale already, so base size = current / currentScale
-      const baseW = b.width / s;
-      const baseH = b.height / s;
+      // viewport хэмжээ
+      const vw = window.innerWidth;
+      const vh = window.innerHeight;
 
-      const maxScaleX = (a.width - pad * 2) / baseW;
-      const maxScaleY = (a.height - pad * 2) / baseH;
+      // дэлгэц "дүүрэх" хязгаар (өргөн 92%, өндөр 78% орчим)
+      const maxScaleX = (vw * 0.92) / baseW;
+      const maxScaleY = (vh * 0.78) / baseH;
       const maxScale = Math.max(1, Math.min(maxScaleX, maxScaleY));
 
       return Math.min(maxScale, +next.toFixed(2));
@@ -83,7 +83,7 @@ export default function App() {
       <div className="bgHearts" aria-hidden="true" />
 
       <div className="card">
-        <div className="badge">togloy.store</div>
+        <div className="badge">shuudtogloy.store</div>
 
         <h1 className="title">{title}</h1>
 
@@ -93,16 +93,8 @@ export default function App() {
               Нэг л товч дарчих… тэгээд би хамгийн азтай хүн болно 🥰
             </p>
 
+            {/* NO zugtah talbai */}
             <div className="arena" ref={arenaRef}>
-              <button
-                ref={yesBtnRef}
-                className="btn yes"
-                onClick={handleYes}
-                style={{ ["--yesScale"]: yesScale }}
-              >
-                Yes 💞
-              </button>
-
               <button
                 className="btn no"
                 onClick={moveNo}
@@ -115,6 +107,16 @@ export default function App() {
                 {noText}
               </button>
             </div>
+
+            {/* YES дэлгэцийн төвд fixed байрлаад томорно */}
+            <button
+              ref={yesBtnRef}
+              className={`btn yes ${yesScale > 6 ? "big" : ""}`}
+              onClick={handleYes}
+              style={{ ["--yesScale"]: yesScale }}
+            >
+              Yes 💞
+            </button>
 
             <div className="hint">(No дээр дарахад зугтаана 😆)</div>
           </>
