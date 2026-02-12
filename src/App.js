@@ -2,32 +2,34 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import "./App.css";
 
 const NO_LINES = [
-  "ҮГҮЙ ЭЭ, БАЯРЛАЛАА",
-  "ЗА БОЛИОЧ 🥺",
-  "ДАХИАД БОД ДОО 🙈",
-  "НАДАД БОЛОМЖ ОЛГООЧ 😭",
-  "ЭНЭ NO ЧИНЬ БУРУУ ЮМ ШИГ БАЙНА 😆",
-  "СҮҮЛЧИЙН БОЛОМЖ ШҮҮ 💘",
+  "ҮГҮЙ, БАЯРЛАЛАА",
+  "АЙН, СОНГОЛТОО ЗӨВ ХИЙСЭН БИЗ ДЭЭ",
+  "ДАХИАД САЙН БОД ДОО",
+  "НЭГ Л ЮМ БУРУУ БОЛООД БАЙНА ШДЭЭ",
+  "NO ТОВЧИЙГ ЧИНЬ АВЛАА ШҮҮ",
+  "СҮҮЛЧИЙН БОЛОМЖ ШҮҮ",
 ];
 
 function rand(min, max) {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
+function clamp(n, a, b) {
+  return Math.max(a, Math.min(b, n));
+}
 
 export default function App() {
   const [accepted, setAccepted] = useState(false);
 
-  // ✅ YES grows by X mostly (fills row), Y slightly
-  const [yesSX, setYesSX] = useState(1);
-  const [yesSY, setYesSY] = useState(1);
+  const [yesFill, setYesFill] = useState(0);
   const [yesGlow, setYesGlow] = useState(false);
 
   const [noCount, setNoCount] = useState(0);
   const [noText, setNoText] = useState(NO_LINES[0]);
-  const [noPos, setNoPos] = useState({ x: 78, y: 55 });
+  const [noPos, setNoPos] = useState({ x: 82, y: 55 });
+  const [noScale, setNoScale] = useState(1);
+  const [noGone, setNoGone] = useState(false);
 
   const rowRef = useRef(null);
-  const yesBtnRef = useRef(null);
 
   const greeting = "Шайн уу, Хулакаа.";
   const question = useMemo(() => {
@@ -36,70 +38,64 @@ export default function App() {
   }, [accepted]);
 
   useEffect(() => {
-    setNoPos({ x: rand(70, 92), y: rand(35, 72) });
+    setNoPos({ x: rand(72, 88), y: rand(36, 68) });
   }, []);
 
   function moveNo() {
-    if (accepted) return;
+    if (accepted || noGone) return;
 
-    setNoCount((c) => c + 1);
-    setNoText(NO_LINES[(noCount + 1) % NO_LINES.length]);
+    const nextCount = noCount + 1;
+    setNoCount(nextCount);
 
-    // NO runs inside row
-    setNoPos({ x: rand(62, 94), y: rand(28, 78) });
+    setNoText(NO_LINES[nextCount % NO_LINES.length]);
 
-    const row = rowRef.current;
-    const btn = yesBtnRef.current;
+    // right lane
+    setNoPos({ x: rand(70, 90), y: rand(36, 68) });
 
-    // ✅ Increase scales, but compute max so it can fill row width
-    setYesSX((sx) => {
-      const stepX = 0.22; // өргөнөөр өсөх хурд
-      const nextSX = sx + stepX;
+    setNoScale((s) => Math.max(0.34, +(s - 0.12).toFixed(2)));
+    setYesFill((f) => Math.min(1, +(f + 0.25).toFixed(2)));
 
-      if (!row || !btn) return Math.min(6, +nextSX.toFixed(2));
-
-      const r = row.getBoundingClientRect();
-      const b = btn.getBoundingClientRect();
-
-      // base sizes (remove current scales)
-      const baseW = b.width / sx;
-      const baseSY = yesSY; // current Y scale from state (closure ok enough)
-      const baseH = b.height / baseSY;
-
-      // padding so it doesn't hit border
-      const padX = 26;
-      const padY = 22;
-
-      // max X based on row width (THIS is what we want)
-      const maxSX = (r.width - padX * 2) / baseW;
-
-      // keep Y small, just slightly bigger
-      const maxSY = Math.min(1.25, (r.height - padY * 2) / baseH);
-
-      // update Y at the same time (cap)
-      setYesSY((sy) => Math.min(maxSY, +(sy + 0.05).toFixed(2)));
-
-      return Math.min(maxSX, +nextSX.toFixed(2));
-    });
-
-    if (noCount >= 1) setYesGlow(true);
+    if (nextCount >= 2) setYesGlow(true);
+    if (nextCount >= 6) setNoGone(true);
   }
 
   function onYes() {
     setAccepted(true);
   }
 
+  const yesStyle = useMemo(() => {
+    const row = rowRef.current;
+
+    const isMobile = typeof window !== "undefined" && window.innerWidth <= 520;
+    const baseW = isMobile ? 220 : 260;
+    const baseH = isMobile ? 54 : 56;
+
+    if (!row) return { width: `${baseW}px`, height: `${baseH}px` };
+
+    const r = row.getBoundingClientRect();
+    const padX = 22;
+    const padY = 18;
+    const maxW = Math.max(baseW, r.width - padX * 2);
+    const maxH = Math.max(baseH, r.height - padY * 2);
+
+    const f = clamp(yesFill, 0, 1);
+    const w = Math.round(baseW + (maxW - baseW) * f);
+    const h = Math.round(baseH + (maxH - baseH) * Math.min(1, f * 0.78));
+
+    return { width: `${w}px`, height: `${h}px` };
+  }, [yesFill]);
+
   return (
     <div className="page">
       <div className="heartRain" aria-hidden="true">
-        {Array.from({ length: 12 }).map((_, i) => (
+        {Array.from({ length: 10 }).map((_, i) => (
           <span
             key={i}
             className="drop"
             style={{
               left: `${Math.random() * 100}%`,
               animationDelay: `${Math.random() * 2.2}s`,
-              animationDuration: `${3.8 + Math.random() * 2.6}s`,
+              animationDuration: `${4.2 + Math.random() * 2.4}s`,
             }}
           >
             ❤
@@ -139,35 +135,37 @@ export default function App() {
 
             <div className="buttonRow" ref={rowRef}>
               <button
-                ref={yesBtnRef}
                 className={`btn yes ${yesGlow ? "glow" : ""} ${
-                  yesSX > 2.2 ? "big" : ""
+                  yesFill > 0.75 ? "big" : ""
                 }`}
                 onClick={onYes}
-                style={{
-                  ["--sx"]: yesSX,
-                  ["--sy"]: yesSY,
-                }}
+                style={yesStyle}
               >
                 ТИЙМ ЭЭ, МЭДЭЭЖ
               </button>
 
-              <button
-                className="btn no"
-                onClick={moveNo}
-                style={{
-                  left: `${noPos.x}%`,
-                  top: `${noPos.y}%`,
-                  transform: "translate(-50%, -50%)",
-                }}
-              >
-                {noText}
-              </button>
+              {!noGone && (
+                <button
+                  className="btn no"
+                  onClick={moveNo}
+                  style={{
+                    left: `${noPos.x}%`,
+                    top: `${noPos.y}%`,
+                    transform: `translate(-50%, -50%) scale(${noScale})`,
+                  }}
+                >
+                  {noText}
+                </button>
+              )}
 
               <div className="pixelCorner" aria-hidden="true" />
             </div>
 
-            <div className="hint">(“Үгүй” дээр дарахад зугтана 😆)</div>
+            <div className="hint">
+              {noGone
+                ? "Одоо ганцхан зөв сонголт үлдлээ 😌💗"
+                : "(“Үгүй” дарах юм бол чиний baby маш их гомдоно)"}
+            </div>
           </>
         ) : (
           <Success />
@@ -199,7 +197,8 @@ function Success() {
 
       <div className="successTitle">YAY! 🎉</div>
       <div className="successSub">
-        Одоо болзоо товлоё 🥂<br />
+        Одоо болзоо товлоё 🥂
+        <br />
         <span className="small">Хайртай шүү.</span>
       </div>
 
