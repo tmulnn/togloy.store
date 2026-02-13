@@ -1,7 +1,5 @@
-// src/SuccessScene.js
 import { useEffect, useMemo, useRef, useState } from "react";
 
-/* helpers */
 function clamp(n, a, b) {
   return Math.max(a, Math.min(b, n));
 }
@@ -51,7 +49,7 @@ export default function SuccessScene({ startDateISO, messageLines = DEFAULT_MESS
       <div className="successCard">
         <div className="successHeader">
           <div className="successTitle">YAYYYY 💖</div>
-          <div className="successSub">Одоо бол бүр нэг л сонголттой 😌</div>
+          <div className="successSub">Санаа амар чамтайгаа байх нь дээ 😌</div>
         </div>
 
         <div className="successBody">
@@ -60,22 +58,16 @@ export default function SuccessScene({ startDateISO, messageLines = DEFAULT_MESS
           </div>
 
           <div className="rightCol">
-            {/* ✅ text speed + pause */}
             <Typewriter lines={messageLines} speed={70} linePause={1000} />
 
             <div className="timerBox">
-              {/* ✅ romantic sentence */}
               <div className="timerLabel">
-  Чамтайгаа хамт{" "}
-  <span className="timerBig">
-    {t.days} өдөр {pad2(t.hours)} цаг {pad2(t.mins)} мин {pad2(t.secs)} сек
-  </span>{" "}
-  хугацааг өнгөрөөжээ 💗
-</div>
-
-
-
-
+                Чамтайгаа хамт{" "}
+                <span className="timerBig">
+                  {t.days} өдөр {pad2(t.hours)} цаг {pad2(t.mins)} мин {pad2(t.secs)} сек
+                </span>{" "}
+                хугацааг өнгөрөөжээ 💗
+              </div>
             </div>
           </div>
         </div>
@@ -166,7 +158,7 @@ function HeartTreeCanvas() {
 
     let startTime = performance.now();
     let last = performance.now();
-    let phase = 0; // 0 seed, 1 grow, 2 bloom
+    let phase = 0;
 
     let seedY = -20;
     let seedX = 0;
@@ -243,7 +235,6 @@ function HeartTreeCanvas() {
 
       for (let i = 0; i < count; i++) {
         let p = randomPointInHeart();
-
         if (p.y > bottomCut) {
           i--;
           continue;
@@ -278,16 +269,6 @@ function HeartTreeCanvas() {
       ctx.quadraticCurveTo(baseX + w0 * 0.9, midY, baseX + w0, baseY);
       ctx.closePath();
       ctx.fillStyle = "rgba(70,25,35,0.92)";
-      ctx.fill();
-
-      ctx.globalAlpha = 0.22;
-      ctx.beginPath();
-      ctx.moveTo(baseX - w0 * 0.25, baseY);
-      ctx.quadraticCurveTo(baseX - 1, midY, baseX - w1 * 0.2, topY);
-      ctx.lineTo(baseX + w1 * 0.15, topY);
-      ctx.quadraticCurveTo(baseX + 2, midY, baseX + w0 * 0.05, baseY);
-      ctx.closePath();
-      ctx.fillStyle = "rgba(255,255,255,0.65)";
       ctx.fill();
 
       ctx.restore();
@@ -346,24 +327,10 @@ function HeartTreeCanvas() {
       if (phase === 0) {
         seedY += dt * 0.24;
         if (seedY > groundY) seedY = groundY;
-
         drawHeart(seedX, seedY, 8, "rgba(255,74,156,0.95)", 1);
-
-        if (Math.random() < 0.14) {
-          addFloatHeart(
-            seedX + (Math.random() - 0.5) * 18,
-            seedY - 6,
-            4,
-            (Math.random() - 0.5) * 0.18,
-            -0.45 - Math.random() * 0.35,
-            820
-          );
-        }
       }
 
-      const trunkP =
-        phase === 0 ? 0 : phase === 1 ? clamp((elapsed - 1600) / 2000, 0, 1) : 1;
-
+      const trunkP = phase === 0 ? 0 : phase === 1 ? clamp((elapsed - 1600) / 2000, 0, 1) : 1;
       const trunkH = h * 0.62;
       const topY = baseY - trunkH * trunkP;
 
@@ -390,7 +357,6 @@ function HeartTreeCanvas() {
           const palette = ["#ff4a9c", "#ff79b6", "#ff2e86", "#ff9acb"];
           drawHeart(b.x + jitterX, b.y + jitterY, size, palette[(Math.random() * palette.length) | 0], 0.95);
 
-          // ✅ falling hearts: slower + fewer
           if (Math.random() < 0.012) {
             addFloatHeart(
               b.x,
@@ -415,21 +381,9 @@ function HeartTreeCanvas() {
 
         p.x += p.vx * dt;
         p.y += p.vy * dt;
-
-        // ✅ gravity slower
         p.vy += 0.00020 * dt;
 
-        p.rot += p.vr * dt;
-        p.a = 1 - k;
-
-        drawHeart(
-          p.x,
-          p.y,
-          p.s * (1 + 0.15 * Math.sin(age / 120)),
-          "rgba(255,74,156,0.92)",
-          p.a,
-          p.rot
-        );
+        drawHeart(p.x, p.y, p.s, "rgba(255,74,156,0.92)", 1 - k, p.rot);
       }
 
       raf = requestAnimationFrame(tick);
@@ -452,7 +406,7 @@ function HeartTreeCanvas() {
   return (
     <div className="heartTreeWrap" ref={wrapRef}>
       <canvas ref={canvasRef} />
-      <div className="canvasHint">tap ❤️</div>
+      <div className="canvasHint">Дахин эхлүүлэх ❤️</div>
     </div>
   );
 }

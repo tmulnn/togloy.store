@@ -1,17 +1,29 @@
-// src/BackgroundMusic.js
 import React, { createContext, useContext, useEffect, useRef, useState } from "react";
 
-const MusicCtx = createContext({ ready: false });
+const MusicCtx = createContext({
+  enabled: false,
+  toggle: () => {},
+});
+
 export function useMusic() {
   return useContext(MusicCtx);
 }
 
 export default function BackgroundMusic({ src = "/backgroundmusic.mp3", children }) {
   const audioRef = useRef(null);
-  const [needsTap, setNeedsTap] = useState(false);
-  const [ready, setReady] = useState(false);
 
-  async function tryPlay() {
+  const [enabled, setEnabled] = useState(() => {
+    const v = localStorage.getItem("bgmusic_enabled");
+    return v ? v === "1" : true;
+  });
+
+  const [needsTap, setNeedsTap] = useState(false);
+
+  useEffect(() => {
+    localStorage.setItem("bgmusic_enabled", enabled ? "1" : "0");
+  }, [enabled]);
+
+  useEffect(() => {
     const a = audioRef.current;
     if (!a) return;
 
@@ -19,35 +31,67 @@ export default function BackgroundMusic({ src = "/backgroundmusic.mp3", children
     a.preload = "auto";
     a.volume = 0.55;
 
+    if (!enabled) {
+      a.pause();
+      setNeedsTap(false);
+      return;
+    }
+
+    (async () => {
+      try {
+        await a.play();
+        setNeedsTap(false);
+      } catch {
+        setNeedsTap(true);
+      }
+    })();
+  }, [enabled]);
+
+  async function enableByTap() {
+    const a = audioRef.current;
+    if (!a) return;
+
     try {
       await a.play();
       setNeedsTap(false);
-      setReady(true);
+      setEnabled(true);
     } catch {
-      // autoplay blocked -> user gesture required
       setNeedsTap(true);
-      setReady(false);
     }
   }
 
-  useEffect(() => {
-    tryPlay();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  function toggle() {
+    const a = audioRef.current;
+    if (!a) return;
 
-  function enableByTap() {
-    tryPlay();
+    if (enabled) {
+      a.pause();
+      setEnabled(false);
+      setNeedsTap(false);
+    } else {
+      setEnabled(true);
+    }
   }
 
   return (
-    <MusicCtx.Provider value={{ ready }}>
+    <MusicCtx.Provider value={{ enabled, toggle }}>
       <audio ref={audioRef} src={src} playsInline />
       {children}
 
-      {needsTap && (
-        <button className="musicGate" onClick={enableByTap}>
-          Tap to enable sound 💗
-        </button>
+      {!needsTap && (
+        <div className="musicPill">
+          <button className="musicIconBtn" onClick={toggle}>
+            {enabled ? "🔇 Дууг хаах" : "🔊 Дууг тоглуулах"}
+          </button>
+        </div>
+      )}
+
+      {enabled && needsTap && (
+        <div className="musicGateWrap">
+          <button className="musicGateBtn" onClick={enableByTap}>
+            Tap to start sound 💗
+          </button>
+        </div>
       )}
     </MusicCtx.Provider>
   );

@@ -1,16 +1,15 @@
-// src/App.js
 import { useEffect, useMemo, useRef, useState } from "react";
 import "./App.css";
 import SuccessScene from "./SuccessScene";
 import BackgroundMusic from "./BackgroundMusic";
 
 const NO_LINES = [
-  "ҮГҮЙ ЭЭ, БАЯРРЛАЛАА",
-  "ЗА БОЛИОЧ 🥺",
-  "ДАХИАД БОД ДОО 🙈",
-  "НАДАД БОЛОМЖ ОЛГООЧ 😭",
-  "ЭНЭ NO ЧИНЬ БУРУУ ЮМ ШИГ 😆",
-  "СҮҮЛЧИЙН БОЛОМЖ ШҮҮ 💘",
+  "ҮГҮЙ ЭЭ, БАЯРЛАЛАА",
+  "АЙН, СОНГОЛТОО ЗӨВ ХИЙСЭН БИЗ ДЭЭ",
+  "ДАХИАД САЙН БОД ДОО",
+  "НЭГ Л ЮМ БУРУУ БОЛООД БАЙНА ШДЭЭ",
+  "NO ТОВЧИЙГ ЧИНЬ АВЛАА ШҮҮ",
+  "СҮҮЛЧИЙН БОЛОМЖ ШҮҮ",
 ];
 
 function rand(min, max) {
@@ -35,7 +34,7 @@ function AppInner() {
   const [yesGlow, setYesGlow] = useState(false);
 
   const [noCount, setNoCount] = useState(0);
-  const [noText, setNoText] = useState(NO_LINES[0]);
+  const [noText, setNoText] = useState(NO_LINES[0] ?? "");
   const [noPos, setNoPos] = useState({ x: 82, y: 60 });
   const [noScale, setNoScale] = useState(1);
   const [noGone, setNoGone] = useState(false);
@@ -43,28 +42,24 @@ function AppInner() {
   const rowRef = useRef(null);
   const yesBtnRef = useRef(null);
 
-  const greeting = "Шайн уу, Хулакаа.";
+  const greeting = "Шайн уу, хөөрхөн Хулаакаа";
   const question = useMemo(() => {
     if (accepted) return "YAYYYY 💖";
-    return "Чи миний Валентин болох уу?";
+    return "Чи миний Валентин болж болох уу?";
   }, [accepted]);
 
   useEffect(() => {
     const isMobile = window.innerWidth <= 520;
-    setNoPos(
-      isMobile
-        ? { x: rand(64, 88), y: rand(64, 80) }
-        : { x: rand(72, 88), y: rand(40, 68) }
-    );
+    setNoPos(isMobile ? { x: rand(64, 88), y: rand(64, 80) } : { x: rand(72, 88), y: rand(40, 68) });
   }, []);
 
   function pickNoPosAvoidingYes() {
     const isMobile = window.innerWidth <= 520;
 
-    let xMin = isMobile ? 62 : 70;
-    let xMax = 90;
-    let yMin = isMobile ? 62 : 36;
-    let yMax = isMobile ? 82 : 68;
+    const xMin = isMobile ? 62 : 70;
+    const xMax = 90;
+    const yMin = isMobile ? 62 : 36;
+    const yMax = isMobile ? 82 : 68;
 
     const row = rowRef.current;
     const yesBtn = yesBtnRef.current;
@@ -99,15 +94,16 @@ function AppInner() {
 
     const nextCount = noCount + 1;
     setNoCount(nextCount);
-    setNoText(NO_LINES[nextCount % NO_LINES.length]);
+
+    // ✅ текст өөрчлөхгүй, зөвхөн crash хамгаална
+    const nextLine =
+      NO_LINES.length > 0 ? NO_LINES[nextCount % NO_LINES.length] : "";
+    setNoText(nextLine);
 
     setNoPos(pickNoPosAvoidingYes());
 
     setNoScale((s) => Math.max(isMobile ? 0.45 : 0.34, +(s - 0.12).toFixed(2)));
-
-    setYesFill((f) =>
-      Math.min(1, +(f + (isMobile ? 0.32 : 0.25)).toFixed(2))
-    );
+    setYesFill((f) => Math.min(1, +(f + (isMobile ? 0.32 : 0.25)).toFixed(2)));
 
     if (nextCount >= 2) setYesGlow(true);
     if (nextCount >= vanishAt) setNoGone(true);
@@ -135,9 +131,7 @@ function AppInner() {
 
     const f = clamp(yesFill, 0, 1);
     const w = Math.round(baseW + (maxW - baseW) * f);
-    const h = Math.round(
-      baseH + (maxH - baseH) * Math.min(1, f * (isMobile ? 0.55 : 0.78))
-    );
+    const h = Math.round(baseH + (maxH - baseH) * Math.min(1, f * (isMobile ? 0.55 : 0.78)));
 
     return { width: `${w}px`, height: `${h}px` };
   }, [yesFill]);
@@ -148,9 +142,10 @@ function AppInner() {
         <SuccessScene
           startDateISO="2024-11-29T00:00:00+08:00"
           messageLines={[
-            "Хулакаа минь 💗",
-            "Чамтайгаа хамт байхад бүх юм илүү гоё.",
-            "Одоо бүр албан ёсоор миний Валентин боллоо 😌",
+          "Хайртай сайхан Хулан минь 💗🌸",
+          "Халгих зүрхний ундарга минь ❤️‍🔥💞",
+          "Өглөө бүр үнсэж сэрээх сэн чамайг 😌💋",
+          "Өдөр бүр инээлгэж жаргаах сан чамайг 😌✨😊",
           ]}
         />
       </div>
@@ -191,7 +186,7 @@ function AppInner() {
               onError={(e) => (e.currentTarget.style.display = "none")}
             />
             <div className="stickerFallback" aria-hidden="true">
-              🐼💗🐻
+              🐰💗🦊
             </div>
           </div>
         </div>
@@ -201,14 +196,12 @@ function AppInner() {
           <span className="q">{question}</span>
         </h1>
 
-        <div className="sub">Чамдаа би зөндөө хайртай шүү 💗</div>
+        <div className="sub">Энэ өдрийг чамтай л хамт өнгөрөөх гээд ээ кк 💗</div>
 
         <div className="buttonRow" ref={rowRef}>
           <button
             ref={yesBtnRef}
-            className={`btn yes ${yesGlow ? "glow" : ""} ${
-              yesFill > 0.75 ? "big" : ""
-            }`}
+            className={`btn yes ${yesGlow ? "glow" : ""} ${yesFill > 0.75 ? "big" : ""}`}
             onClick={onYes}
             style={yesStyle}
           >
@@ -233,7 +226,7 @@ function AppInner() {
         </div>
 
         <div className="hint">
-          {noGone ? "Одоо зөвхөн нэг сонголт үлдлээ 😌💗" : "(“Үгүй” дээр дарахад зугтана 😆)"}
+          {noGone ? "Хамгийн зөв сонголт нь ингээд үлдчихлээ 😌💗" : "(Үгүй дарах юм бол харин GG шдээ тэгээд!)"}
         </div>
       </div>
     </div>
